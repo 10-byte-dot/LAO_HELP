@@ -36,6 +36,64 @@
     btn.click();
   });
 
+  // ===== 키보드 위·아래 화살표로 왼쪽 항목 이동 =====
+  // 왼쪽 목록에서 보이는 항목(하위 항목 포함)을 차례로 고른다. 목록 끝에서 더 내려가면 다음 대분류의
+  // 첫 항목으로, 맨 위에서 더 올라가면 앞 대분류의 마지막 항목으로 넘어간다.
+  function midStops() {
+    var list = document.getElementById('midList');
+    if (!list) return [];
+    var nodes = list.querySelectorAll('li.mid-item:not(.mid-item-wrap), .mid-item-header, li.mid-subitem');
+    var stops = [];
+    for (var i = 0; i < nodes.length; i++) {
+      var n = nodes[i];
+      if (n.offsetParent === null) continue;                       // 접혀 숨은 하위 항목
+      if (n.classList.contains('mid-item-header') && n.classList.contains('expanded')) continue; // 펼친 묶음은 하위 항목으로 이동
+      stops.push(n);
+    }
+    return stops;
+  }
+  function activeStopIndex(stops) {
+    for (var i = 0; i < stops.length; i++) {
+      var s = stops[i];
+      if (s.classList.contains('active')) return i;
+      if (s.classList.contains('mid-item-header')) {
+        var wrap = s.closest('.mid-item-wrap');
+        if (wrap && wrap.querySelector('.mid-subitem.active')) return i;
+      }
+    }
+    return -1;
+  }
+  function selectStop(stop) {
+    if (!stop) return;
+    stop.click();
+    var again = activeStopIndex(midStops());
+    var cur = midStops()[again];
+    if (cur && cur.scrollIntoView) cur.scrollIntoView({ block: 'nearest' });
+  }
+  function moveTopTab(step, toLast) {
+    var tabs = Array.prototype.slice.call(document.querySelectorAll('button.top-tab'));
+    var idx = -1;
+    for (var i = 0; i < tabs.length; i++) if (tabs[i].classList.contains('active')) idx = i;
+    var next = tabs[idx + step];
+    if (!next) return;
+    next.click();
+    var stops = midStops();
+    selectStop(toLast ? stops[stops.length - 1] : stops[0]);
+  }
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+    if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return;
+    if (isTyping(e.target) || isModalOpen()) return;
+    var stops = midStops();
+    if (!stops.length) return;
+    e.preventDefault();
+    var idx = activeStopIndex(stops);
+    var step = e.key === 'ArrowDown' ? 1 : -1;
+    var target = idx < 0 ? stops[0] : stops[idx + step];
+    if (target) selectStop(target);
+    else moveTopTab(step, step < 0);
+  });
+
   // 본문 제목이 바뀌면(쪽을 넘기거나 다른 항목을 고르면) 스크롤을 맨 위로 돌린다.
   function watchTitle() {
     var title = byId('bodyTitle') || document.querySelector('.body-title');

@@ -58,12 +58,19 @@
   }
 
   function setData(langData) {
+    var lang = getCurrentLang();
+    if (window.HelpEditorHistory) window.HelpEditorHistory.record(lang);
+    writeLangData(lang, langData);
+    if (window.HelpEditorAutoSave) window.HelpEditorAutoSave.schedule(lang);
+  }
+
+  // 한 언어의 자료를 화면 자료(#help-data)에 쓰고 다시 그린다. 되돌리기 기록은 남기지 않는다.
+  function writeLangData(lang, langData) {
     var embed = document.getElementById('help-data');
     if (!embed) return;
     var full = getFullData();
     if (!full) full = {};
     if (full.topTabs || full.bodyContent) full = { ko: full };
-    var lang = getCurrentLang();
     full[lang] = langData;
     var jsonStr = JSON.stringify(full);
     embed.textContent = jsonStr;
@@ -3119,6 +3126,262 @@
     }
   }
   if (btnSaveIndexHtml) btnSaveIndexHtml.addEventListener('click', saveIndexHtml);
+
+  /* ===== 되돌리기(Ctrl+Z) · 다시 하기(Ctrl+Y, Ctrl+Shift+Z) =====
+     자료가 바뀌기 직전의 그 언어 자료를 기록해 두었다가 되돌린다. 글 입력 칸 안에서는
+     브라우저의 글자 되돌리기를 그대로 쓴다. */
+  var HISTORY_MAX = 50;
+  var undoStack = [];
+  var redoStack = [];
+  function snapshotOf(lang) {
+    var full = getFullData();
+    if (!full) return null;
+    var d = full[lang] || ((full.topTabs || full.bodyContent) ? full : null);
+    return d ? { lang: lang, json: JSON.stringify(d) } : null;
+  }
+  function restoreSnapshot(snap) {
+    writeLangData(snap.lang, JSON.parse(snap.json));
+    // 다른 언어를 고친 기록이면 그 언어 화면으로 바꿔 보여 준다.
+    var sel = document.getElementById('langSelect');
+    if (sel && getCurrentLang() !== snap.lang) {
+      sel.value = snap.lang;
+      sel.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    if (window.HelpEditorAutoSave) window.HelpEditorAutoSave.schedule(snap.lang);
+  }
+  function undo() {
+    var snap = undoStack.pop();
+    if (!snap) { showEditorStatus('더 되돌릴 수정이 없습니다'); return; }
+    var now = snapshotOf(snap.lang);
+    if (now) redoStack.push(now);
+    restoreSnapshot(snap);
+    showEditorStatus('되돌렸습니다 (남은 ' + undoStack.length + ')');
+  }
+  function redo() {
+    var snap = redoStack.pop();
+    if (!snap) { showEditorStatus('다시 할 수정이 없습니다'); return; }
+    var now = snapshotOf(snap.lang);
+    if (now) undoStack.push(now);
+    restoreSnapshot(snap);
+    showEditorStatus('다시 했습니다');
+  }
+  window.HelpEditorHistory = {
+    record: function (lang) {
+      var snap = snapshotOf(lang);
+      if (!snap) return;
+      var last = undoStack[undoStack.length - 1];
+      if (last && last.lang === snap.lang && last.json === snap.json) return;
+      undoStack.push(snap);
+      if (undoStack.length > HISTORY_MAX) undoStack.shift();
+      redoStack.length = 0;
+    },
+    undo: undo,
+    redo: redo
+  };
+  function isTextEditing(el) {
+    if (!el) return false;
+    var tag = (el.tagName || '').toLowerCase();
+    if (tag === 'textarea' || tag === 'select' || el.isContentEditable) return true;
+    if (tag === 'input') {
+      var t = (el.type || 'text').toLowerCase();
+      return ['text', 'search', 'number', 'url', 'email', 'password', 'tel'].indexOf(t) >= 0;
+    }
+    return false;
+  }
+  document.addEventListener('keydown', function (e) {
+    if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
+    var k = (e.key || '').toLowerCase();
+    var isUndo = k === 'z' && !e.shiftKey;
+    var isRedo = k === 'y' || (k === 'z' && e.shiftKey);
+    if (!isUndo && !isRedo) return;
+    if (isTextEditing(e.target)) return; // 글 입력 중에는 글자 단위 되돌리기
+    e.preventDefault();
+    if (isUndo) undo(); else redo();
+  });
+
+  /* ===== 상태 알림(오른쪽 위 작은 글) ===== */
+  var statusEl = document.getElementById('editorStatus');
+  var statusTimer = null;
+  function showEditorStatus(text, keep) {
+    if (!statusEl) return;
+    statusEl.textContent = text;
+    statusEl.hidden = false;
+    if (statusTimer) clearTimeout(statusTimer);
+    if (!keep) statusTimer = setTimeout(function () { refreshAutoSaveLabel(); }, 2500);
+  }
+
+  /* ===== 자동 저장 =====
+     처음 한 번 [자동 저장 켜기]로 도움말 폴더(index.html 이 있는 폴더)를 고르면,
+     그 뒤로는 수정할 때마다 잠시 뒤에 다음 파일에 바로 씁니다.
+       index.html · Help_Editor.HTML 안의 언어별 자료, help-data-{언어}.json (한국어면 help-data.json 도)
+     고른 폴더는 브라우저에 기억해 두고, 다음에 열면 한 번 눌러 권한만 다시 허락하면 됩니다.
+     (크롬·엣지에서 동작. 다른 브라우저는 기존 다운로드 단추를 씁니다.) */
+  var AUTOSAVE_DELAY = 800;
+  var dirHandle = null;
+  var pendingLangs = {};
+  var saveTimer = null;
+  var saving = false;
+  var lastSavedAt = null;
+  var btnAutoSave = document.getElementById('btnAutoSave');
+
+  function idbOpen() {
+    return new Promise(function (resolve, reject) {
+      var req = indexedDB.open('lo-help-editor', 1);
+      req.onupgradeneeded = function () { req.result.createObjectStore('kv'); };
+      req.onsuccess = function () { resolve(req.result); };
+      req.onerror = function () { reject(req.error); };
+    });
+  }
+  function idbSet(key, val) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var tx = db.transaction('kv', 'readwrite');
+        tx.objectStore('kv').put(val, key);
+        tx.oncomplete = function () { resolve(); };
+        tx.onerror = function () { reject(tx.error); };
+      });
+    });
+  }
+  function idbGet(key) {
+    return idbOpen().then(function (db) {
+      return new Promise(function (resolve, reject) {
+        var req = db.transaction('kv', 'readonly').objectStore('kv').get(key);
+        req.onsuccess = function () { resolve(req.result); };
+        req.onerror = function () { reject(req.error); };
+      });
+    });
+  }
+
+  function refreshAutoSaveLabel() {
+    if (btnAutoSave) {
+      btnAutoSave.textContent = dirHandle ? '자동 저장 켜짐' : '자동 저장 켜기';
+      btnAutoSave.classList.toggle('is-on', !!dirHandle);
+    }
+    if (!statusEl) return;
+    if (saving) statusEl.textContent = '저장 중…';
+    else if (dirHandle && lastSavedAt) statusEl.textContent = '자동 저장됨 ' + lastSavedAt.toLocaleTimeString();
+    else if (dirHandle) statusEl.textContent = '자동 저장 대기';
+    else statusEl.textContent = '자동 저장 꺼짐';
+    statusEl.hidden = false;
+  }
+
+  function readText(handle, name) {
+    return handle.getFileHandle(name).then(function (fh) { return fh.getFile(); }).then(function (f) { return f.text(); });
+  }
+  function writeText(handle, name, text, create) {
+    return handle.getFileHandle(name, { create: !!create }).then(function (fh) {
+      return fh.createWritable().then(function (w) {
+        return w.write(text).then(function () { return w.close(); });
+      });
+    });
+  }
+  // 페이지 안의 <script id="help-data-언어"> 자료만 바꾼다(나머지 HTML은 그대로 둔다).
+  function patchPage(html, langs, full) {
+    langs.forEach(function (lang) {
+      if (!full[lang]) return;
+      var json = JSON.stringify(full[lang], null, 2).replace(/<\//g, '<\\/');
+      var re = new RegExp('(<script type="application/json" id="help-data-' + lang.replace(/-/g, '\\-') + '">)([\\s\\S]*?)(</script>)');
+      html = html.replace(re, function (m, a, b, c) { return a + '\n' + json + '\n' + c; });
+    });
+    return html;
+  }
+
+  function flushAutoSave() {
+    if (!dirHandle || saving) return;
+    var langs = Object.keys(pendingLangs);
+    if (!langs.length) return;
+    pendingLangs = {};
+    var full = getFullData();
+    if (!full) return;
+    if (full.topTabs || full.bodyContent) full = { ko: full };
+    saving = true;
+    refreshAutoSaveLabel();
+    var jobs = [];
+    ['index.html', 'Help_Editor.HTML'].forEach(function (page) {
+      jobs.push(readText(dirHandle, page).then(function (html) {
+        return writeText(dirHandle, page, patchPage(html, langs, full));
+      }).catch(function () { /* 그 폴더에 없는 파일은 건너뛴다 */ }));
+    });
+    langs.forEach(function (lang) {
+      if (!full[lang]) return;
+      var json = JSON.stringify(full[lang], null, 2);
+      jobs.push(writeText(dirHandle, 'help-data-' + lang + '.json', json, true));
+      if (lang === 'ko') jobs.push(writeText(dirHandle, 'help-data.json', json, true));
+    });
+    Promise.all(jobs).then(function () {
+      saving = false;
+      lastSavedAt = new Date();
+      refreshAutoSaveLabel();
+      if (Object.keys(pendingLangs).length) scheduleAutoSave();
+    }).catch(function (err) {
+      saving = false;
+      langs.forEach(function (l) { pendingLangs[l] = true; });
+      showEditorStatus('자동 저장 실패: ' + (err && err.message ? err.message : err), true);
+    });
+  }
+  function scheduleAutoSave(lang) {
+    if (lang) pendingLangs[lang] = true;
+    if (!dirHandle) return;
+    if (saveTimer) clearTimeout(saveTimer);
+    saveTimer = setTimeout(flushAutoSave, AUTOSAVE_DELAY);
+  }
+  window.HelpEditorAutoSave = { schedule: scheduleAutoSave, flush: flushAutoSave };
+
+  function useHandle(handle) {
+    return handle.getFileHandle('index.html').then(function () {
+      dirHandle = handle;
+      refreshAutoSaveLabel();
+      scheduleAutoSave();  // 꺼져 있던 동안의 수정도 바로 저장
+      return true;
+    }).catch(function () {
+      alert('고른 폴더에 index.html 이 없습니다. 도움말 폴더(index.html 이 있는 곳)를 골라 주세요.');
+      return false;
+    });
+  }
+  function turnOnAutoSave() {
+    if (dirHandle) { flushAutoSave(); return; }
+    if (!window.showDirectoryPicker) {
+      alert('이 브라우저는 폴더에 바로 쓰기를 지원하지 않습니다. 크롬이나 엣지로 열어 주세요.');
+      return;
+    }
+    idbGet('helpDir').catch(function () { return null; }).then(function (saved) {
+      if (saved && saved.requestPermission) {
+        return saved.requestPermission({ mode: 'readwrite' }).then(function (p) {
+          if (p === 'granted') return useHandle(saved);
+          return pickFolder();
+        });
+      }
+      return pickFolder();
+    });
+  }
+  function pickFolder() {
+    return window.showDirectoryPicker({ id: 'lo-help', mode: 'readwrite' }).then(function (handle) {
+      return useHandle(handle).then(function (ok) {
+        if (ok) idbSet('helpDir', handle).catch(function () {});
+      });
+    }).catch(function () {});
+  }
+  if (btnAutoSave) btnAutoSave.addEventListener("click", turnOnAutoSave);
+  window.HelpEditorAutoSave.useHandle = useHandle; // 점검용: 폴더 핸들을 직접 넘겨 시험
+  // 지난번에 고른 폴더가 있고 권한이 남아 있으면 바로 켠다.
+  if (window.indexedDB) {
+    idbGet('helpDir').then(function (saved) {
+      if (!saved || !saved.queryPermission) return;
+      return saved.queryPermission({ mode: 'readwrite' }).then(function (p) {
+        if (p === 'granted') useHandle(saved);
+      });
+    }).catch(function () {}).then(refreshAutoSaveLabel);
+  } else {
+    refreshAutoSaveLabel();
+  }
+  // 저장이 남은 채로 창을 닫으려 하면 알린다.
+  window.addEventListener('beforeunload', function (e) {
+    if (dirHandle && (saving || Object.keys(pendingLangs).length)) {
+      flushAutoSave();
+      e.preventDefault();
+      e.returnValue = '';
+    }
+  });
 
   var btnSaveHelpEditorHtml = document.getElementById('btnSaveHelpEditorHtml');
   function saveHelpEditorHtml() {

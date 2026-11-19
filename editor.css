@@ -257,6 +257,16 @@
   background: var(--help-bg-item-hover);
   color: var(--help-accent);
 }
+/* 자동 저장 켜짐 표시와 상태 글 */
+.btn-autosave.is-on {
+  border-color: #3fbf6f;
+  color: #3fbf6f;
+}
+.editor-status {
+  font-size: var(--help-font-size-sm);
+  color: var(--help-text-muted);
+  white-space: nowrap;
+}
 
 .btn-add-lang {
   padding: 6px 12px;

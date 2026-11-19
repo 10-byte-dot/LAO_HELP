@@ -3,7 +3,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>도움말 편집기</title>
   <link rel="stylesheet" href="styles.css">
-  <link rel="stylesheet" href="editor.css">
+  <link rel="stylesheet" href="editor.css?v=2">
   <link rel="stylesheet" href="lo-theme.css?v=5">
 </head>
 <body>
@@ -21,6 +21,8 @@
     <!-- 우측 상단: 최상단 탭 관리 + JSON 저장 + 언어 선택 + 언어 추가 + 닫기 -->
     <div class="help-header-right">
       <button type="button" class="btn-edit-tabs" id="btnEditTabs" aria-label="최상단 탭 관리" title="최상단 탭 추가/수정/삭제">+</button>
+      <button type="button" class="btn-save-json btn-autosave" id="btnAutoSave" title="도움말 폴더를 한 번 고르면, 고칠 때마다 index.html · Help_Editor.HTML · help-data-언어.json 에 바로 저장합니다. 되돌리기 Ctrl+Z, 다시 하기 Ctrl+Y">자동 저장 켜기</button>
+      <span class="editor-status" id="editorStatus" aria-live="polite" hidden></span>
       <button type="button" class="btn-save-json" id="btnSaveJson" aria-label="JSON으로 저장" title="현재 데이터를 help-data.json 파일로 다운로드">JSON 저장</button>
       <button type="button" class="btn-save-json" id="btnSaveIndexHtml" aria-label="index.html 다운로드" title="편집된 데이터가 포함된 index.html 다운로드">index.html 다운로드</button>
       <button type="button" class="btn-save-json" id="btnSaveHelpEditorHtml" aria-label="Help_Editor.HTML 다운로드" title="편집된 데이터가 포함된 Help_Editor.HTML 다운로드">Help_Editor.HTML 다운로드</button>
@@ -17107,7 +17109,7 @@
   <script src="lang.js"></script>
   <script src="app.js"></script>
   <script src="lo-extra.js"></script>
-  <script src="help-editor.js"></script><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;">
+  <script src="help-editor.js?v=2"></script><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;"><input type="file" accept="image/png,image/jpeg,image/jpg,image/gif,image/webp" style="display: none;">
 
 
 </body></html>

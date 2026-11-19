@@ -255,6 +255,32 @@ html, body { background: var(--help-bg); }
   background: linear-gradient(180deg, rgba(8, 16, 26, 0) 0, rgba(8, 16, 26, 0.94) 14px, #08101a 100%);
 }
 .body-text-block { margin-bottom: 14px; }
+
+/* ===== 글이 넘치면 글 칸만 스크롤 =====
+   그림과 이전·다음 단추는 제자리에 두고, 글 칸(제목·설명)이 남은 높이만 쓴다.
+   넘치면 먼저 글자를 줄이고(lo-extra.js), 그래도 넘치면 글 칸 안에만 스크롤 막대가 생긴다. */
+.body-content { overflow: hidden; }
+.body-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+.body-inner[hidden] { display: none; }
+.body-figure { flex: 0 0 auto; max-height: min(55vh, 58%); }   /* 창이 낮아도 글 칸 자리를 남긴다 */
+.body-text-block {
+  flex: 0 1 auto;               /* 글 길이만큼만 차지하고, 넘치면 줄어들며 스크롤 */
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 204, 0, 0.75) rgba(255, 255, 255, 0.06);
+}
+.body-text-block::-webkit-scrollbar { width: 8px; }
+.body-text-block::-webkit-scrollbar-thumb { background: rgba(255, 204, 0, 0.75); border-radius: 4px; }
+.body-text-block::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.06); }
+.body-pagination { position: static; margin-top: auto; flex: 0 0 auto; }   /* 단추는 늘 바닥 */
+
 .body-inner:focus, .btn-prev:focus-visible, .btn-next:focus-visible { outline: 2px solid var(--lo-line); outline-offset: 2px; }
 
 /* ===== 좁은 화면: 화면 밖으로 넓어지지 않게 =====

@@ -1,0 +1,321 @@
+/* ===== 라스트오리진 화면풍 꾸미기 =====
+   styles.css(틀) 뒤에 불러와 색·모양만 덮어쓴다. 배치와 동작은 건드리지 않는다.
+   기준: 게임 화면의 짙은 남색 바탕, 노란 강조, 하늘색 선, 모서리를 비스듬히 자른 단추. */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=Exo+2:wght@600;700&display=swap');
+
+:root {
+  --help-font-family: "IBM Plex Sans KR", "Noto Sans KR", "Malgun Gothic", sans-serif;
+  --help-bg: #0a1420;
+  --help-bg-panel: #0f1d2e;
+  --help-bg-item: #15273b;
+  --help-bg-item-hover: #1d3651;
+  --help-bg-item-active: #ffcc00;
+  --help-border: rgba(110, 180, 255, 0.22);
+  --help-border-divider: rgba(110, 180, 255, 0.14);
+  --help-text: #eaf2fa;
+  --help-text-muted: #93a9bf;
+  --help-accent: #ffcc00;
+  --help-accent-hover: #ffe04d;
+  --help-selected: #ffcc00;
+  --help-accent-glow: rgba(255, 204, 0, 0.28);
+  --help-radius: 2px;
+  --help-radius-sm: 2px;
+  --lo-ink: #10151c;            /* 노란 바탕 위 글자 */
+  --lo-line: #3fb6ff;           /* 하늘색 선 */
+  --lo-cut: 12px;               /* 모서리 자르는 크기 */
+  --help-dot-pattern: none;
+}
+
+html, body { background: var(--help-bg); }
+
+/* 바탕: 짙은 남색에 옅은 격자 */
+.help-root {
+  background:
+    linear-gradient(rgba(63, 182, 255, 0.045) 1px, transparent 1px) 0 0 / 100% 32px,
+    linear-gradient(90deg, rgba(63, 182, 255, 0.045) 1px, transparent 1px) 0 0 / 32px 100%,
+    radial-gradient(120% 90% at 70% 0%, #173252 0%, #0c1a2b 45%, #070e17 100%);
+}
+
+/* ----- 위쪽 띠 ----- */
+.help-header,
+.help-header-right {
+  background: linear-gradient(180deg, #13263b 0%, #0c1929 100%);
+  border-bottom: 1px solid var(--lo-line);
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+}
+
+.top-tabs-inner { gap: clamp(10px, 1.6vw, 20px); }
+
+.top-tab {
+  width: clamp(48px, 5.4vw, 60px);
+  padding: 8px;
+  background: #16283d;
+  border: 1px solid var(--help-border);
+  border-radius: 0;
+  clip-path: polygon(var(--lo-cut) 0, 100% 0, 100% calc(100% - var(--lo-cut)), calc(100% - var(--lo-cut)) 100%, 0 100%, 0 var(--lo-cut));
+}
+.top-tab img { filter: invert(1) brightness(1.6); opacity: 0.75; }   /* 검은 선 아이콘을 밝게 */
+.top-tab:hover { background: var(--help-bg-item-hover); }
+.top-tab:hover img { opacity: 1; }
+.top-tab.active { background: var(--help-accent); border-color: var(--help-accent); }
+.top-tab.active img { filter: none; opacity: 1; }
+.top-tab.active::before { display: none; }
+.top-tab-item.active .top-tab-caption {
+  color: var(--help-accent);
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.lang-select {
+  background: #16283d !important;
+  border-color: var(--help-border);
+  border-radius: 0;
+}
+.lang-select option { background: #16283d !important; }
+
+.btn-close {
+  background: #16283d;
+  color: var(--help-text);
+  border-radius: 0;
+  clip-path: polygon(8px 0, 100% 0, 100% calc(100% - 8px), calc(100% - 8px) 100%, 0 100%, 0 8px);
+}
+.btn-close:hover { background: var(--help-accent); color: var(--lo-ink); }
+
+/* ----- 왼쪽 항목 목록 ----- */
+.mid-panel {
+  background: linear-gradient(180deg, rgba(15, 29, 46, 0.96), rgba(9, 18, 30, 0.96));
+  border-right: 1px solid var(--help-border);
+}
+.mid-search-wrap { border-bottom: 1px solid var(--help-border-divider); }
+.mid-search {
+  background: #0a1522;
+  border-color: var(--help-border);
+  border-radius: 0;
+}
+.mid-search:focus { background: #0a1522; border-color: var(--lo-line); box-shadow: 0 0 0 1px var(--lo-line); }
+
+.mid-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--help-text);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+}
+.mid-section-title::before {
+  content: "";
+  width: 4px;
+  height: 1em;
+  background: var(--help-accent);
+}
+.mid-section-title:empty::before { display: none; }
+
+.mid-item,
+.mid-item-header {
+  background: linear-gradient(90deg, #172b41 0%, #12233a 100%);
+  border: 0;
+  border-left: 3px solid rgba(63, 182, 255, 0.45);
+  border-radius: 0;
+  color: var(--help-text-muted);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - var(--lo-cut)), calc(100% - var(--lo-cut)) 100%, 0 100%);
+  margin-bottom: 6px;
+  padding: 12px 14px;
+}
+.mid-item:hover,
+.mid-item-header:hover { background: var(--help-bg-item-hover); color: var(--help-text); }
+
+.mid-item.active,
+.mid-item-header.expanded {
+  background: var(--help-accent);
+  border-left-color: var(--lo-ink);
+  color: var(--lo-ink);
+  font-weight: 700;
+}
+.mid-item.active::before { display: none; }
+
+.mid-sublist { border-left: 1px solid var(--lo-line); margin-left: 14px; padding-left: 14px; }
+.mid-subitem {
+  background: #101f31;
+  border-radius: 0;
+  border-left: 2px solid transparent;
+}
+.mid-subitem:hover { background: var(--help-bg-item-hover); }
+.mid-subitem.active {
+  background: #1d3651;
+  border-left-color: var(--help-accent);
+  color: var(--help-accent);
+  font-weight: 600;
+}
+
+/* ----- 오른쪽 본문 ----- */
+.body-panel { background: transparent; }
+.body-placeholder { color: var(--help-text-muted); letter-spacing: 0.04em; }
+
+.body-figure {
+  border: 1px solid var(--lo-line);
+  border-radius: 0;
+  background: #05090f;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.6), 0 10px 30px rgba(0, 0, 0, 0.55), 0 0 24px rgba(63, 182, 255, 0.12);
+}
+.body-figure::before,
+.body-figure::after {
+  width: 28px;
+  height: 28px;
+  border-color: var(--help-accent);
+  border-radius: 0;
+  opacity: 1;
+  z-index: 3;
+}
+.body-figure::before { top: -1px; left: -1px; border-top-width: 3px; border-left-width: 3px; }
+.body-figure::after { bottom: -1px; right: -1px; border-bottom-width: 3px; border-right-width: 3px; }
+.body-image { background: #05090f; }
+
+.body-slideshow-indicator {
+  background: rgba(8, 16, 26, 0.85);
+  border: 1px solid var(--help-border);
+  border-radius: 0;
+  box-shadow: none;
+}
+.body-slideshow-circle { border-radius: 0; transform: rotate(45deg); width: 10px; height: 10px; }
+.body-slideshow-gauge-wrap { background: rgba(255, 204, 0, 0.18); border-radius: 0; margin: 0 8px; }
+.body-slideshow-gauge-fill { border-radius: 0; }
+
+.body-text-block {
+  margin-top: clamp(12px, 1.6vw, 20px);
+  padding: clamp(14px, 1.8vw, 22px) clamp(14px, 2vw, 26px);
+  background: linear-gradient(180deg, rgba(18, 35, 56, 0.92), rgba(11, 22, 36, 0.92));
+  border-top: 2px solid var(--help-accent);
+  clip-path: polygon(0 0, 100% 0, 100% calc(100% - 16px), calc(100% - 16px) 100%, 0 100%);
+}
+.body-title {
+  color: var(--help-accent);
+  letter-spacing: 0.04em;
+}
+.body-description { color: #cfdbe8; }
+
+/* 쪽 넘김: 게임의 노란 단추 모양 */
+.btn-prev,
+.btn-next {
+  padding: 14px 34px;
+  background: var(--help-accent);
+  border: 0;
+  border-radius: 0;
+  color: var(--lo-ink);
+  font-weight: 700;
+  clip-path: polygon(var(--lo-cut) 0, 100% 0, 100% calc(100% - var(--lo-cut)), calc(100% - var(--lo-cut)) 100%, 0 100%, 0 var(--lo-cut));
+}
+.btn-prev:hover,
+.btn-next:hover { background: var(--help-accent-hover); color: var(--lo-ink); }
+.btn-prev:disabled,
+.btn-next:disabled { background: #22364d; color: #6f859b; opacity: 1; }
+.body-pagination-dot { border-radius: 0; }
+
+/* 스크롤 막대 */
+.mid-list-wrap,
+.body-content { scrollbar-width: thin; scrollbar-color: #2c4a6b transparent; }
+.mid-list-wrap::-webkit-scrollbar,
+.body-content::-webkit-scrollbar { width: 8px; }
+.mid-list-wrap::-webkit-scrollbar-thumb,
+.body-content::-webkit-scrollbar-thumb { background: #2c4a6b; }
+.mid-list-wrap::-webkit-scrollbar-track,
+.body-content::-webkit-scrollbar-track { background: transparent; }
+
+/* 대분류가 많아 아이콘만으로는 구분하기 어려우므로, 고르지 않은 대분류의 이름도 항상 보인다. */
+.top-tab-item .top-tab-caption {
+  display: block;
+  min-height: 1.2em;
+  padding: 2px 0;
+  font-size: 12px;
+  white-space: nowrap;
+  color: var(--help-text-muted);
+}
+.top-tab-item { min-width: 68px; }
+
+/* 본문 글: 목록과 단계가 많아 왼쪽 정렬로 읽기 쉽게 하고, 한 줄이 너무 길어지지 않게 폭을 잡는다. */
+.body-description {
+  text-align: left;
+  max-width: 46em;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.75;
+}
+
+/* ===== 이전·다음 단추를 본문 칸 바닥에 고정 =====
+   글이 길어도 짧아도 단추가 늘 같은 자리에 있도록 한다. 그림과 글만 그 위에서 스크롤된다. */
+.body-content { padding-bottom: 0; }
+.body-inner {
+  flex-grow: 1;                 /* 글이 짧아도 본문 칸 높이를 채워 단추를 바닥으로 민다 */
+}
+.body-pagination {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-top: auto;
+  padding: 12px 0 14px;
+  background: linear-gradient(180deg, rgba(8, 16, 26, 0) 0, rgba(8, 16, 26, 0.94) 14px, #08101a 100%);
+}
+.body-text-block { margin-bottom: 14px; }
+.body-inner:focus, .btn-prev:focus-visible, .btn-next:focus-visible { outline: 2px solid var(--lo-line); outline-offset: 2px; }
+
+/* ===== 좁은 화면: 화면 밖으로 넓어지지 않게 =====
+   대분류가 9개라 위쪽 띠가 휴대폰 너비보다 넓다. 띠는 옆으로 밀어서 보게 하고,
+   나머지 칸은 화면 너비 안에 들어오게 한다. */
+.help-root { grid-template-columns: minmax(0, 1fr) auto; }
+.help-main { grid-template-columns: var(--help-mid-width) minmax(0, 1fr); }
+.help-header { min-width: 0; }
+
+@media (max-width: 900px) {
+  .help-main { grid-template-columns: minmax(0, 1fr); }
+  .help-header {
+    justify-content: flex-start;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .help-header::-webkit-scrollbar { display: none; }
+  .top-tabs, .top-tabs-inner { flex-shrink: 0; }
+}
+
+/* ===== 휴대폰 가로: 높이가 낮으니 위아래로 쌓지 않고 목록 | 본문 두 칸 =====
+   위쪽 띠를 낮추고, 그림은 단추 띠 위로 한 화면에 들어오게 줄인다. */
+@media (orientation: landscape) and (max-height: 600px) {
+  .help-root { height: 100vh; height: 100dvh; }
+  .help-main { grid-template-columns: clamp(130px, 19vw, 200px) minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); }
+  .mid-panel { max-height: none; min-height: 0; border-bottom: none; border-right: 1px solid var(--help-border); }
+  .help-header { min-height: 0; padding: 4px 8px; }
+  .help-header-right { padding: 4px 6px; gap: 6px; }
+  .top-tab-item { min-width: 48px; }
+  .top-tab { width: 36px; padding: 4px; }
+  .top-tab img { width: 20px; height: 20px; }
+  .top-tab-item .top-tab-caption { font-size: 10px; margin-top: 2px; }
+  .body-content { padding-left: 8px; padding-right: 8px; }
+  .body-inner { padding-top: 6px; }
+  /* 본문: 그림(왼쪽) | 글(오른쪽)을 나란히, 단추 띠는 아래. 글 칸만 따로 스크롤한다. */
+  .body-content { overflow: hidden; }
+  .body-inner {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) auto;
+    column-gap: 10px;
+    height: 100%;
+    padding-top: 6px;
+  }
+  .body-figure { grid-column: 1; grid-row: 1; align-self: center; aspect-ratio: 16 / 9; max-height: none; width: 100%; margin: 0; }
+  .body-text-block { grid-column: 2; grid-row: 1; align-self: stretch; max-height: 100%; margin: 0; padding: 8px 10px; overflow-y: auto; min-height: 0; text-align: left; }
+  .body-title { font-size: 15px; margin-bottom: 4px; }
+  .body-description { font-size: 13px; line-height: 1.55; max-width: none; }
+  .body-pagination { grid-column: 1 / -1; grid-row: 2; position: static; padding: 6px 0; margin-top: 4px; }
+  .btn-prev, .btn-next { padding: 8px 16px; font-size: 13px; }
+}
+
+@media (max-width: 600px) {
+  .top-tab-item { min-width: 56px; }
+  .top-tab-item .top-tab-caption { font-size: 11px; }
+  .help-header-right { padding: 6px; gap: 6px; }
+  .body-content { padding-left: 10px; padding-right: 10px; }
+  .body-inner { padding-top: 12px; }
+  .body-text-block { padding-left: 12px; padding-right: 12px; }
+  .btn-prev, .btn-next { padding: 12px 18px; font-size: 14px; }
+  .body-pagination { padding: 10px 0 12px; }
+}

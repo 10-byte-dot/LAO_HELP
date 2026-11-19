@@ -319,3 +319,6 @@ html, body { background: var(--help-bg); }
   .btn-prev, .btn-next { padding: 12px 18px; font-size: 14px; }
   .body-pagination { padding: 10px 0 12px; }
 }
+
+/* 글이 길어 스크롤 막대가 생겨도 글 칸이 옆으로 밀리지 않게, 막대 자리를 양쪽에 늘 비워 둔다. */
+.body-content { scrollbar-gutter: stable both-edges; }

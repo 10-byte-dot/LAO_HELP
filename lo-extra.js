@@ -124,12 +124,30 @@
     var block = document.querySelector('.body-text-block');
     var content = byId('bodyContent');
     if (!block || !content || block.offsetParent === null) return;
-    block.style.zoom = '';
+    var desc = block.querySelector('.body-description');
+    setZoom(block, desc, 1);
     if (!textOverflows(block, content)) return;
     for (var z = 1 - FIT_STEP; z >= FIT_MIN - 0.001; z -= FIT_STEP) {
-      block.style.zoom = z.toFixed(2);
+      setZoom(block, desc, z);
       if (!textOverflows(block, content)) return;
     }
+  }
+
+  // 글자만 줄이고 칸의 너비·안쪽 여백·왼쪽 끝은 그대로 둔다.
+  // 칸(.body-text-block)은 두고 제목과 글에만 zoom 을 건다. 글의 최대 너비는 줄인 만큼 되돌려 준다.
+  function setZoom(block, desc, z) {
+    var title = block.querySelector('.body-title');
+    var parts = [title, desc];
+    for (var i = 0; i < parts.length; i++) {
+      if (!parts[i]) continue;
+      parts[i].style.zoom = z >= 1 ? '' : z.toFixed(2);
+    }
+    block.style.zoom = '';
+    if (!desc) return;
+    desc.style.maxWidth = '';
+    if (z >= 1) return;
+    var mw = parseFloat(window.getComputedStyle(desc).maxWidth);
+    if (!isNaN(mw)) desc.style.maxWidth = (mw / z).toFixed(1) + 'px';
   }
 
   var fitQueued = false;

@@ -3218,6 +3218,8 @@
      (크롬·엣지에서 동작. 다른 브라우저는 기존 다운로드 단추를 씁니다.) */
   var AUTOSAVE_DELAY = 800;
   var dirHandle = null;
+  var serverMode = false;   // 편집기_서버.py 로 열었으면 폴더를 고르지 않고 서버에 바로 저장
+  function isOn() { return serverMode || !!dirHandle; }
   var pendingLangs = {};
   var saveTimer = null;
   var saving = false;
@@ -3254,13 +3256,13 @@
 
   function refreshAutoSaveLabel() {
     if (btnAutoSave) {
-      btnAutoSave.textContent = dirHandle ? '자동 저장 켜짐' : '자동 저장 켜기';
-      btnAutoSave.classList.toggle('is-on', !!dirHandle);
+      btnAutoSave.textContent = isOn() ? '자동 저장 켜짐' : '자동 저장 켜기';
+      btnAutoSave.classList.toggle('is-on', isOn());
     }
     if (!statusEl) return;
     if (saving) statusEl.textContent = '저장 중…';
-    else if (dirHandle && lastSavedAt) statusEl.textContent = '자동 저장됨 ' + lastSavedAt.toLocaleTimeString();
-    else if (dirHandle) statusEl.textContent = '자동 저장 대기';
+    else if (isOn() && lastSavedAt) statusEl.textContent = '자동 저장됨 ' + lastSavedAt.toLocaleTimeString();
+    else if (isOn()) statusEl.textContent = '자동 저장 대기';
     else statusEl.textContent = '자동 저장 꺼짐';
     statusEl.hidden = false;
   }
@@ -3287,7 +3289,7 @@
   }
 
   function flushAutoSave() {
-    if (!dirHandle || saving) return;
+    if (!isOn() || saving) return;
     var langs = Object.keys(pendingLangs);
     if (!langs.length) return;
     pendingLangs = {};
@@ -3296,6 +3298,15 @@
     if (full.topTabs || full.bodyContent) full = { ko: full };
     saving = true;
     refreshAutoSaveLabel();
+    if (serverMode) {
+      var payload = {};
+      langs.forEach(function (lang) { if (full[lang]) payload[lang] = full[lang]; });
+      fetch('/__save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        .then(function (res) { return res.json(); })
+        .then(function (r) { if (!r || !r.ok) throw new Error((r && r.error) || '서버 저장 실패'); afterSaved(); })
+        .catch(function (err) { saveFailed(langs, err); });
+      return;
+    }
     var jobs = [];
     ['index.html', 'Help_Editor.HTML'].forEach(function (page) {
       jobs.push(readText(dirHandle, page).then(function (html) {
@@ -3308,20 +3319,22 @@
       jobs.push(writeText(dirHandle, 'help-data-' + lang + '.json', json, true));
       if (lang === 'ko') jobs.push(writeText(dirHandle, 'help-data.json', json, true));
     });
-    Promise.all(jobs).then(function () {
-      saving = false;
-      lastSavedAt = new Date();
-      refreshAutoSaveLabel();
-      if (Object.keys(pendingLangs).length) scheduleAutoSave();
-    }).catch(function (err) {
-      saving = false;
-      langs.forEach(function (l) { pendingLangs[l] = true; });
-      showEditorStatus('자동 저장 실패: ' + (err && err.message ? err.message : err), true);
-    });
+    Promise.all(jobs).then(afterSaved).catch(function (err) { saveFailed(langs, err); });
+  }
+  function afterSaved() {
+    saving = false;
+    lastSavedAt = new Date();
+    refreshAutoSaveLabel();
+    if (Object.keys(pendingLangs).length) scheduleAutoSave();
+  }
+  function saveFailed(langs, err) {
+    saving = false;
+    langs.forEach(function (l) { pendingLangs[l] = true; });
+    showEditorStatus('자동 저장 실패: ' + (err && err.message ? err.message : err), true);
   }
   function scheduleAutoSave(lang) {
     if (lang) pendingLangs[lang] = true;
-    if (!dirHandle) return;
+    if (!isOn()) return;
     if (saveTimer) clearTimeout(saveTimer);
     saveTimer = setTimeout(flushAutoSave, AUTOSAVE_DELAY);
   }
@@ -3339,7 +3352,7 @@
     });
   }
   function turnOnAutoSave() {
-    if (dirHandle) { flushAutoSave(); return; }
+    if (isOn()) { flushAutoSave(); return; }
     if (!window.showDirectoryPicker) {
       alert('이 브라우저는 폴더에 바로 쓰기를 지원하지 않습니다. 크롬이나 엣지로 열어 주세요.');
       return;
@@ -3363,20 +3376,29 @@
   }
   if (btnAutoSave) btnAutoSave.addEventListener("click", turnOnAutoSave);
   window.HelpEditorAutoSave.useHandle = useHandle; // 점검용: 폴더 핸들을 직접 넘겨 시험
-  // 지난번에 고른 폴더가 있고 권한이 남아 있으면 바로 켠다.
-  if (window.indexedDB) {
+  // 편집기_서버.py 로 열었으면(주소가 http) 서버 저장을 바로 켠다. 아니면 지난번에 고른 폴더를 쓴다.
+  function restoreFolder() {
+    if (!window.indexedDB) { refreshAutoSaveLabel(); return; }
+
     idbGet('helpDir').then(function (saved) {
       if (!saved || !saved.queryPermission) return;
       return saved.queryPermission({ mode: 'readwrite' }).then(function (p) {
         if (p === 'granted') useHandle(saved);
       });
     }).catch(function () {}).then(refreshAutoSaveLabel);
+  }
+  if (/^https?:$/.test(location.protocol)) {
+    fetch('/__save', { cache: 'no-store' }).then(function (res) { return res.ok ? res.json() : null; })
+      .then(function (r) {
+        if (r && r.ok) { serverMode = true; refreshAutoSaveLabel(); scheduleAutoSave(); }
+        else restoreFolder();
+      }).catch(restoreFolder);
   } else {
-    refreshAutoSaveLabel();
+    restoreFolder();
   }
   // 저장이 남은 채로 창을 닫으려 하면 알린다.
   window.addEventListener('beforeunload', function (e) {
-    if (dirHandle && (saving || Object.keys(pendingLangs).length)) {
+    if (isOn() && (saving || Object.keys(pendingLangs).length)) {
       flushAutoSave();
       e.preventDefault();
       e.returnValue = '';

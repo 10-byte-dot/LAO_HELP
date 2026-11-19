@@ -1062,6 +1062,12 @@
 
   /* ===== 본문 관리 (선택된 중단 탭의 본문만) ===== */
   function getCurrentBodyId() {
+    // 지금 화면에 보이는 본문(이전·다음 페이지로 넘긴 쪽 포함)을 먼저 쓴다.
+    // 항목 목록의 data-body-id 는 그 항목의 첫 본문이라, 그것만 보면 2쪽을 고쳐도 1쪽이 열린다.
+    if (window.HelpApp && typeof window.HelpApp.getCurrentBodyId === 'function') {
+      var shown = window.HelpApp.getCurrentBodyId();
+      if (shown) return shown;
+    }
     // 바텀탭이 있을 때 선택된 항목은 .mid-subitem.active (bodyId 있음)
     var sub = document.querySelector('.mid-subitem.active');
     if (sub) return (sub.dataset.bodyId || '').trim() || null;

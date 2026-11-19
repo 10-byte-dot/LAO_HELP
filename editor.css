@@ -796,3 +796,12 @@ select option {
   flex: 1 1 auto;
   min-width: 0;
 }
+/* 편집기에서는 수정 단추 때문에 스크롤 막대가 생겼다 없어졌다 하며 글이 몇 픽셀씩 밀린다. 그 자리를 양쪽에 늘 비워 둔다. */
+.body-content { scrollbar-gutter: stable both-edges; }
+/* 수정 단추는 글 칸 오른쪽 여백에 띄워, 글 칸 너비(줄이 바뀌는 자리)를 실제 도움말과 똑같게 한다. */
+.body-text-block > div { position: relative; }
+.body-text-block > div > .body-title-edit-btn {
+  position: absolute;
+  top: 0;
+  right: -24px;
+}

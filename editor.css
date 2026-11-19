@@ -787,12 +787,3 @@ select option {
   background: var(--help-bg-item-hover);
   color: var(--help-accent);
 }
-
-/* 편집기에서는 본문 글이 수정 단추와 한 줄(가로 묶음)에 들어간다.
-   그대로 두면 글 길이만큼만 너비를 잡아 본문마다 글 칸 너비가 달라지므로,
-   실제 도움말(index.html)처럼 남는 너비를 다 쓰게 한다. */
-.body-text-block > div > .body-description,
-.body-text-block > div > .body-title {
-  flex: 1 1 auto;
-  min-width: 0;
-}
